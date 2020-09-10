@@ -1,0 +1,50 @@
+version: '3'
+services: 
+    db:
+        image: postgres:latest
+        restart: always
+        # volumes: ./
+        environment:
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+    server:
+        # 빌드할 때 사용할 폴더 & 도커파일
+        build:
+            context: ./django_server
+            dockerfile: Dockerfile.dev
+        environment: 
+            - DJANGO_DEBUG=True
+            - DJANGO_DB_HOST=db  # services - db
+            - DJANGO_DB_PORT=5432
+            - DJANGO_DB_NAME=postgres
+            - DJANGO_DB_USERNAME=postgres
+            - DJANGO_DB_PASSWORD=postgres
+            - DJANGO_SECRET_KEY=dev_secret_key
+      
+        # 파일 동기화
+        volumes: 
+            - ./django_server:/usr/src/app
+        # 컨테이너 포트와 로컬 컴퓨터 포트 매핑
+        ports:
+            - "8000:8000"
+        # docker-compose up 이후 컨테이너의 명령어
+        command: python manage.py runserver 0.0.0.0:8000
+        # 서비스 우선순위
+        depends_on: 
+            - db
+    client:
+        build:
+            context: ./vue_client
+            dockerfile: Dockerfile.dev
+        volumes:
+            - /usr/src/app/node_modules
+            - ./vue_client:/usr/src/app
+        command: npm run serve
+        ports:
+            - "8080:8080"
+        depends_on:
+            - server
+
+
+    
